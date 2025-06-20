@@ -304,6 +304,119 @@
                 display: flex;
             }
         }
+
+        /* Interactive Banana for scale easter egg */
+        .banana-scale {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100;
+            user-select: none;
+            transform-origin: center;
+        }
+
+        .banana-scale:hover {
+            transform: scale(1.2) rotate(10deg);
+            filter: drop-shadow(0 8px 16px rgba(255, 215, 0, 0.4));
+        }
+
+        .banana-scale.clicked {
+            animation: bananaExplode 0.6s ease-out;
+        }
+
+        .banana-scale.teleporting {
+            animation: bananaTeleport 0.8s ease-in-out;
+        }
+
+        .banana-emoji {
+            font-size: 4rem;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .banana-text {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 215, 0, 0.95);
+            color: #333;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .banana-text.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(10px);
+        }
+
+        .banana-fact {
+            position: absolute;
+            top: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            max-width: 250px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s ease;
+            z-index: 101;
+        }
+
+        .banana-fact.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            33% { transform: translateY(-8px) rotate(2deg); }
+            66% { transform: translateY(-4px) rotate(-2deg); }
+        }
+
+        @keyframes bananaExplode {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.5) rotate(180deg); }
+            100% { transform: scale(1.2) rotate(360deg); }
+        }
+
+        @keyframes bananaTeleport {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            25% { transform: scale(0.1) rotate(90deg); opacity: 0.5; }
+            50% { transform: scale(0) rotate(180deg); opacity: 0; }
+            75% { transform: scale(0.1) rotate(270deg); opacity: 0.5; }
+            100% { transform: scale(1) rotate(360deg); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .banana-emoji {
+                font-size: 3rem;
+            }
+            
+            .banana-fact {
+                max-width: 200px;
+                font-size: 0.7rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -349,6 +462,13 @@
                 </div>
             </div>
         </main>
+        
+        <!-- Interactive Banana for scale easter egg -->
+        <div class="banana-scale" onclick="clickBanana()" title="Click the banana! 🍌">
+            <div class="banana-emoji">🍌</div>
+            <div class="banana-text">banana for scale!</div>
+            <div class="banana-fact"></div>
+        </div>
     </div>
 
     <script>
@@ -736,6 +856,145 @@
             initializePegs();
             initializeBins();
         }
+
+        // Interactive Banana easter egg
+        let bananaClickCount = 0;
+        let bananaIsAnimating = false;
+
+        function clickBanana() {
+            if (bananaIsAnimating) return;
+            
+            bananaIsAnimating = true;
+            bananaClickCount++;
+            
+            const banana = document.querySelector('.banana-scale');
+            const bananaText = document.querySelector('.banana-text');
+            const bananaFact = document.querySelector('.banana-fact');
+            
+            // Add click animation
+            banana.classList.add('clicked');
+            
+            // Show "banana for scale!" text first
+            bananaText.classList.add('show');
+            
+            // Hilarious banana facts that get progressively funnier
+            const facts = [
+                "🍌 A banana is exactly 1 banana long!",
+                "🍌 Bananas are berries, but strawberries aren't! Mind = blown 🤯",
+                "🍌 This Galton Board is approximately 4.2 bananas wide!",
+                "🍌 Bananas are naturally radioactive! You're basically holding uranium! ☢️",
+                "🍌 The average banana weighs 118 grams. This fact weighs more.",
+                "🍌 Bananas float in water! Unlike my hopes and dreams 🥲",
+                "🍌 You share 50% of your DNA with bananas. Explains a lot...",
+                "🍌 Bananas are the world's most popular fruit! Sorry, apples 🍎",
+                "🍌 A banana tree isn't actually a tree - it's a herb! 🌿",
+                "🍌 The inside of a banana peel can polish shoes! Fashion! ✨",
+                "🍌 I'm running out of banana facts... this is bananas! 🤪",
+                "🍌 You've clicked me " + bananaClickCount + " times. Obsessed much? 😏",
+                "🍌 Seriously, go play with the Galton Board! That's the real fun! 🎯",
+                "🍌 Fine, I'll keep teleporting. You win this round, human! 🏃‍♂️💨"
+            ];
+            
+            const factIndex = Math.min(bananaClickCount - 1, facts.length - 1);
+            const currentFact = facts[factIndex];
+            
+            // Show fact after a delay
+            setTimeout(() => {
+                bananaFact.textContent = currentFact;
+                bananaFact.classList.add('show');
+            }, 600);
+            
+            // Hide everything and teleport after showing fact
+            setTimeout(() => {
+                bananaText.classList.remove('show');
+                bananaFact.classList.remove('show');
+                
+                // Start teleport animation
+                banana.classList.add('teleporting');
+                
+                setTimeout(() => {
+                    teleportBanana();
+                    banana.classList.remove('clicked', 'teleporting');
+                    bananaIsAnimating = false;
+                }, 800);
+            }, 3000);
+        }
+
+        function teleportBanana() {
+            const banana = document.querySelector('.banana-scale');
+            
+            // Get safe positions (avoiding the simulation area and controls)
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Define no-go zones (simulation container area)
+            const simulationRect = document.querySelector('.simulation-container').getBoundingClientRect();
+            
+            let newX, newY;
+            let attempts = 0;
+            
+            do {
+                // Random position with much larger margin from edges for text bubbles
+                const margin = 150; // Increased margin for text bubble space
+                newX = margin + Math.random() * (viewportWidth - (margin * 2));
+                newY = margin + Math.random() * (viewportHeight - (margin * 2));
+                attempts++;
+            } while (
+                attempts < 20 && (
+                    // Avoid simulation area
+                    (newX > simulationRect.left - 120 && newX < simulationRect.right + 120 &&
+                     newY > simulationRect.top - 120 && newY < simulationRect.bottom + 120) ||
+                    // Avoid top header area (more space)
+                    newY < 200 ||
+                    // Extra safety: ensure we're not too close to any edge
+                    newX < 120 || newX > viewportWidth - 120 ||
+                    newY < 120 || newY > viewportHeight - 120
+                )
+            );
+            
+            // Apply new position
+            banana.style.left = newX + 'px';
+            banana.style.top = newY + 'px';
+            banana.style.right = 'auto';
+            banana.style.bottom = 'auto';
+            
+            // Add a little sparkle effect
+            createSparkles(newX, newY);
+        }
+
+        function createSparkles(x, y) {
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const sparkle = document.createElement('div');
+                    sparkle.innerHTML = '✨';
+                    sparkle.style.position = 'fixed';
+                    sparkle.style.left = (x + Math.random() * 60 - 30) + 'px';
+                    sparkle.style.top = (y + Math.random() * 60 - 30) + 'px';
+                    sparkle.style.fontSize = '1rem';
+                    sparkle.style.pointerEvents = 'none';
+                    sparkle.style.zIndex = '99';
+                    sparkle.style.animation = 'sparkle 1s ease-out forwards';
+                    
+                    document.body.appendChild(sparkle);
+                    
+                    setTimeout(() => sparkle.remove(), 1000);
+                }, i * 100);
+            }
+        }
+
+        // Add sparkle animation
+        const sparkleCSS = `
+            @keyframes sparkle {
+                0% { transform: scale(0) rotate(0deg); opacity: 1; }
+                50% { transform: scale(1) rotate(180deg); opacity: 1; }
+                100% { transform: scale(0) rotate(360deg); opacity: 0; }
+            }
+        `;
+        
+        // Inject sparkle CSS
+        const style = document.createElement('style');
+        style.textContent = sparkleCSS;
+        document.head.appendChild(style);
 
         // Initialize and start
         window.addEventListener('load', () => {
