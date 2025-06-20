@@ -193,6 +193,11 @@
             .controls {
                 flex-direction: column;
             }
+            
+            .controls .btn {
+                flex: 1;
+                min-width: auto;
+            }
 
             .btn {
                 padding: 1rem 1.5rem;
@@ -250,10 +255,69 @@
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
+
+        /* Orientation warning for mobile portrait mode */
+        .orientation-warning {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            color: var(--text-primary);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .orientation-warning h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .orientation-warning p {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            max-width: 300px;
+        }
+
+        .rotate-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Show orientation warning only on mobile in portrait mode */
+        @media (max-width: 768px) and (orientation: portrait) {
+            .orientation-warning {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="app">
+        <!-- Orientation warning for mobile portrait mode -->
+        <div class="orientation-warning">
+            <div class="rotate-icon">📱</div>
+            <h2>Oops! This is awkward...</h2>
+            <p>This Galton Board works best in landscape mode. Please rotate your device horizontally for the full experience!</p>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); font-style: italic;">
+                (Yes, we know it's 2024 and apps should work in portrait mode, but physics simulations need space! 😅)
+            </p>
+        </div>
+
         <header class="header">
             <h1 class="title">Galton Board</h1>
             <p class="subtitle">Normal distribution visualization</p>
@@ -269,6 +333,7 @@
                     <div class="controls">
                         <button class="btn btn-primary" onclick="startSimulation()">Start</button>
                         <button class="btn btn-secondary" onclick="clearBoard()">Reset</button>
+                        <button class="btn btn-secondary" id="muteButton" onclick="toggleMute()" title="Click to enable sound effects">🔇 Sound Off</button>
                     </div>
                     
                     <div class="stats">
@@ -311,6 +376,61 @@
         let ballCount = 0;
         let isRunning = false;
         let ballQueue = [];
+        
+        // Audio context for sound effects
+        let audioContext;
+        let isMuted = true; // Default to muted
+        
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        
+        // Play ball hit sound - tiny metal bead hitting plastic (rain stick sound)
+        function playHitSound() {
+            if (!audioContext || isMuted) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Very high frequency for tiny metal bead sound (rain stick range)
+            oscillator.frequency.setValueAtTime(2000 + Math.random() * 2000, audioContext.currentTime);
+            oscillator.type = 'sine';
+            
+            // Extremely short envelope for quick tick sound
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.03, audioContext.currentTime + 0.0005);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.008);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.008);
+        }
+        
+        // Toggle mute/unmute
+        function toggleMute() {
+            // Initialize audio on first interaction if needed
+            initAudio();
+            
+            isMuted = !isMuted;
+            updateMuteButton();
+        }
+        
+        // Update mute button appearance
+        function updateMuteButton() {
+            const button = document.getElementById('muteButton');
+            if (isMuted) {
+                button.innerHTML = '🔇 Sound Off';
+                button.title = 'Click to enable sound effects';
+            } else {
+                button.innerHTML = '🔊 Sound On';
+                button.title = 'Click to disable sound effects';
+            }
+        }
 
         // Initialize pegs in hexagonal pattern like real Galton board
         function initializePegs() {
@@ -384,6 +504,9 @@
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     if (distance < this.radius + peg.radius) {
+                        // Play hit sound
+                        playHitSound();
+                        
                         // Position correction
                         const angle = Math.atan2(dy, dx);
                         const overlap = this.radius + peg.radius - distance;
@@ -576,6 +699,9 @@
         }
 
         function startSimulation() {
+            // Initialize audio on first user interaction
+            initAudio();
+            
             isRunning = !isRunning;
             const button = event.target;
             button.textContent = isRunning ? 'Stop' : 'Start';
@@ -614,6 +740,7 @@
         // Initialize and start
         window.addEventListener('load', () => {
             resizeCanvas();
+            updateMuteButton(); // Initialize mute button state
             gameLoop();
             
             // Add some initial flair
