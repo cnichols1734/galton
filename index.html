@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galton Board</title>
+    <style>
+        :root {
+            --primary: #1a1a1a;
+            --secondary: #2a2a2a;
+            --accent: #4f46e5;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --border: #3f3f46;
+            --surface: #18181b;
+            --surface-elevated: #27272a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--primary);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+        }
+
+        .title {
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 1rem 2rem;
+        }
+
+        .simulation-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #fafafa;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .controls-panel {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .btn {
+            position: relative;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 100px;
+            outline: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px 0 rgba(79, 70, 229, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1.5rem 1rem;
+            }
+
+            .main-content {
+                padding: 0 0.75rem 1.5rem;
+            }
+
+            .controls-panel {
+                padding: 1rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+            }
+
+            .stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem;
+            }
+
+            .canvas-wrapper {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 1rem;
+            }
+
+            .main-content {
+                padding: 0 0.5rem 1rem;
+            }
+
+            .simulation-container {
+                border-radius: 12px;
+            }
+
+            .controls-panel {
+                padding: 0.75rem;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .canvas-wrapper {
+                min-height: 250px;
+            }
+        }
+
+        /* Loading state */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Smooth animations */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="header">
+            <h1 class="title">Galton Board</h1>
+            <p class="subtitle">Normal distribution visualization</p>
+        </header>
+        
+        <main class="main-content">
+            <div class="simulation-container">
+                <div class="canvas-wrapper">
+                    <canvas id="galtonCanvas" width="800" height="600"></canvas>
+                </div>
+                
+                <div class="controls-panel">
+                    <div class="controls">
+                        <button class="btn btn-primary" onclick="startSimulation()">Start</button>
+                        <button class="btn btn-secondary" onclick="clearBoard()">Reset</button>
+                    </div>
+                    
+                    <div class="stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Progress</div>
+                            <div class="stat-value" id="ballCount">0/1000</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Status</div>
+                            <div class="stat-value" id="distribution">Ready</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('galtonCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Configuration
+        const config = {
+            rows: 20,
+            pegRadius: 2,
+            ballRadius: 1.5,
+            gravity: 0.15,
+            bounce: 0.3,
+            friction: 0.99,
+            pegSpacing: 18,
+            startX: canvas.width / 2,
+            startY: 40,
+            totalBalls: 1000
+        };
+
+        // Game state
+        let balls = [];
+        let pegs = [];
+        let bins = [];
+        let ballCount = 0;
+        let isRunning = false;
+        let ballQueue = [];
+
+        // Initialize pegs in hexagonal pattern like real Galton board
+        function initializePegs() {
+            pegs = [];
+            const centerX = canvas.width / 2;
+            const startY = 80;
+            
+            for (let row = 0; row < config.rows; row++) {
+                const pegsInRow = row + 1;
+                const rowWidth = (pegsInRow - 1) * config.pegSpacing;
+                const startX = centerX - rowWidth / 2;
+                
+                for (let col = 0; col < pegsInRow; col++) {
+                    pegs.push({
+                        x: startX + col * config.pegSpacing,
+                        y: startY + row * (config.pegSpacing * 0.866), // Hexagonal spacing
+                        radius: config.pegRadius,
+                        shape: 'hexagon'
+                    });
+                }
+            }
+        }
+
+        // Initialize bins
+        function initializeBins() {
+            bins = [];
+            const numBins = config.rows + 1;
+            const binWidth = config.pegSpacing;
+            const centerX = canvas.width / 2;
+            const startX = centerX - (numBins * binWidth) / 2;
+            const binY = canvas.height - 120;
+            
+            for (let i = 0; i < numBins; i++) {
+                bins.push({
+                    x: startX + i * binWidth,
+                    y: binY,
+                    width: binWidth - 2,
+                    height: 100,
+                    count: 0,
+                    balls: []
+                });
+            }
+        }
+
+        // Ball class - tiny steel balls like real Galton board
+        class Ball {
+            constructor(x, y) {
+                this.x = x + (Math.random() - 0.5) * 2;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 0.2;
+                this.vy = 0;
+                this.radius = config.ballRadius;
+                this.color = '#E8E8E8';
+                this.settled = false;
+                this.mass = 1;
+            }
+
+            update() {
+                if (this.settled) return;
+
+                // Physics
+                this.vy += config.gravity;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vx *= config.friction;
+
+                // Collision with pegs - true 50/50 randomness like real Galton board
+                pegs.forEach(peg => {
+                    const dx = this.x - peg.x;
+                    const dy = this.y - peg.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < this.radius + peg.radius) {
+                        // Position correction
+                        const angle = Math.atan2(dy, dx);
+                        const overlap = this.radius + peg.radius - distance;
+                        this.x += Math.cos(angle) * overlap;
+                        this.y += Math.sin(angle) * overlap;
+                        
+                        // True binary choice - go left or right randomly
+                        if (Math.random() < 0.5) {
+                            this.vx = -Math.abs(this.vx + Math.random() * 0.5);
+                        } else {
+                            this.vx = Math.abs(this.vx + Math.random() * 0.5);
+                        }
+                        
+                        this.vy = Math.abs(this.vy) * config.bounce;
+                    }
+                });
+
+                // Check if ball reached bins
+                if (this.y > bins[0].y - 10 && !this.settled) {
+                    this.settleToBin();
+                }
+
+                // Side boundaries
+                if (this.x < this.radius) {
+                    this.x = this.radius;
+                    this.vx = Math.abs(this.vx);
+                }
+                if (this.x > canvas.width - this.radius) {
+                    this.x = canvas.width - this.radius;
+                    this.vx = -Math.abs(this.vx);
+                }
+            }
+
+            settleToBin() {
+                const binIndex = Math.floor((this.x - bins[0].x + bins[0].width/2) / config.pegSpacing);
+                const clampedIndex = Math.max(0, Math.min(bins.length - 1, binIndex));
+                
+                const targetBin = bins[clampedIndex];
+                targetBin.count++;
+                targetBin.balls.push(this);
+                
+                // Stack balls realistically in columns
+                const ballsPerRow = Math.floor(targetBin.width / (this.radius * 2.5));
+                const row = Math.floor((targetBin.count - 1) / ballsPerRow);
+                const col = (targetBin.count - 1) % ballsPerRow;
+                
+                this.x = targetBin.x + 4 + col * (this.radius * 2.5) + this.radius;
+                this.y = targetBin.y + targetBin.height - this.radius - row * (this.radius * 2.2);
+                this.settled = true;
+                this.vx = 0;
+                this.vy = 0;
+            }
+
+            draw() {
+                ctx.globalAlpha = 1;
+                
+                // Draw tiny steel ball - simple and clean
+                ctx.fillStyle = '#D0D0D0';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Tiny highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(this.x - this.radius/3, this.y - this.radius/3, this.radius/4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Drawing functions - draw hexagonal pegs like real Galton board
+        function drawPegs() {
+            pegs.forEach(peg => {
+                // Draw hexagonal peg
+                ctx.fillStyle = '#8B4513';
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 0.5;
+                
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i * Math.PI) / 3;
+                    const x = peg.x + peg.radius * Math.cos(angle);
+                    const y = peg.y + peg.radius * Math.sin(angle);
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+        }
+
+        function drawBins() {
+            bins.forEach((bin, index) => {
+                // Draw bin walls
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(bin.x, bin.y);
+                ctx.lineTo(bin.x, bin.y + bin.height);
+                ctx.moveTo(bin.x + bin.width, bin.y);
+                ctx.lineTo(bin.x + bin.width, bin.y + bin.height);
+                // Bottom line
+                ctx.moveTo(bin.x, bin.y + bin.height);
+                ctx.lineTo(bin.x + bin.width, bin.y + bin.height);
+                ctx.stroke();
+
+                // Draw the stacked balls in bins
+                bin.balls.forEach((ball, ballIndex) => {
+                    ball.draw();
+                });
+
+                // Bin count label
+                ctx.fillStyle = '#333';
+                ctx.font = '8px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(bin.count.toString(), bin.x + bin.width/2, bin.y + bin.height + 10);
+            });
+        }
+
+        function drawBackground() {
+            // Clean white background like real Galton board
+            ctx.fillStyle = '#F8F8F8';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw the funnel/entry at top
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(canvas.width/2 - 20, 20);
+            ctx.lineTo(canvas.width/2 - 5, 60);
+            ctx.moveTo(canvas.width/2 + 20, 20);
+            ctx.lineTo(canvas.width/2 + 5, 60);
+            ctx.stroke();
+        }
+
+        // Main game loop
+        function gameLoop() {
+            drawBackground();
+
+            drawPegs();
+            drawBins();
+
+            // Update and draw balls (only unsettled ones)
+            balls.forEach(ball => {
+                if (!ball.settled) {
+                    ball.update();
+                    ball.draw();
+                }
+            });
+
+            // Update stats
+            document.getElementById('ballCount').textContent = `${ballCount}/${config.totalBalls}`;
+            
+            const maxCount = Math.max(...bins.map(b => b.count));
+            const settledBalls = balls.filter(ball => ball.settled).length;
+            const isComplete = ballCount >= config.totalBalls && settledBalls === ballCount;
+            
+            if (isComplete) {
+                document.getElementById('distribution').textContent = 'Complete';
+                if (isRunning) {
+                    isRunning = false;
+                    document.querySelector('button[onclick="startSimulation()"]').textContent = 'Start';
+                }
+            } else if (maxCount > 0 && isRunning) {
+                document.getElementById('distribution').textContent = 'Running';
+            } else if (maxCount > 0 && !isRunning) {
+                document.getElementById('distribution').textContent = 'Paused';
+            } else {
+                document.getElementById('distribution').textContent = 'Ready';
+            }
+
+            // Auto drop balls when running
+            if (isRunning && ballCount < config.totalBalls && Math.random() < 0.3) {
+                dropBall();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Control functions
+        function dropBall() {
+            if (ballCount < config.totalBalls) {
+                balls.push(new Ball(config.startX, config.startY));
+                ballCount++;
+            }
+        }
+
+        function startSimulation() {
+            isRunning = !isRunning;
+            const button = event.target;
+            button.textContent = isRunning ? 'Stop' : 'Start';
+        }
+
+        function clearBoard() {
+            balls = [];
+            bins.forEach(bin => {
+                bin.count = 0;
+                bin.balls = [];
+            });
+            ballCount = 0;
+            isRunning = false;
+            document.querySelector('button[onclick="startSimulation()"]').textContent = 'Start';
+        }
+
+        // Make canvas responsive
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const containerWidth = container.clientWidth - 40; // Account for padding
+            const maxWidth = Math.min(containerWidth, 800);
+            const aspectRatio = 3/4; // height / width for better mobile view
+            
+            canvas.width = maxWidth;
+            canvas.height = maxWidth * aspectRatio;
+            
+            // Update config based on canvas size
+            config.startX = canvas.width / 2;
+            config.pegSpacing = Math.max(12, canvas.width / 45); // Responsive peg spacing
+            
+            // Reinitialize after resize
+            initializePegs();
+            initializeBins();
+        }
+
+        // Initialize and start
+        window.addEventListener('load', () => {
+            resizeCanvas();
+            gameLoop();
+            
+            // Add some initial flair
+            setTimeout(() => {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => dropBall(), i * 200);
+                }
+            }, 500);
+        });
+        
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+    </script>
+</body>
+</html> 
