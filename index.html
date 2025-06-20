@@ -28,22 +28,25 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
             line-height: 1.5;
             overflow-x: hidden;
+            min-height: 100vh;
         }
 
         .app {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            width: 100%;
         }
 
         .header {
-            padding: 2rem;
+            padding: 1.5rem 1rem;
             text-align: center;
             background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+            flex-shrink: 0;
         }
 
         .title {
-            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
             font-weight: 700;
             letter-spacing: -0.025em;
             margin-bottom: 0.5rem;
@@ -55,7 +58,7 @@
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 1rem;
+            font-size: clamp(0.875rem, 3vw, 1rem);
             font-weight: 400;
         }
 
@@ -64,7 +67,9 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 0 1rem 2rem;
+            padding: 1rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .simulation-container {
@@ -72,7 +77,7 @@
             max-width: 900px;
             background: var(--surface-elevated);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
         }
@@ -84,7 +89,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 400px;
+            padding: 1rem;
+            box-sizing: border-box;
         }
 
         canvas {
@@ -105,6 +111,7 @@
             display: flex;
             gap: 0.75rem;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         .btn {
@@ -118,6 +125,7 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             min-width: 100px;
             outline: none;
+            touch-action: manipulation;
         }
 
         .btn-primary {
@@ -179,24 +187,36 @@
 
         @media (max-width: 768px) {
             .header {
-                padding: 1.5rem 1rem;
+                padding: 1rem;
             }
 
             .main-content {
-                padding: 0 0.75rem 1.5rem;
+                padding: 0.75rem;
+            }
+
+            .simulation-container {
+                border-radius: 8px;
+            }
+
+            .canvas-wrapper {
+                padding: 0.75rem;
             }
 
             .controls-panel {
                 padding: 1rem;
+                gap: 1rem;
             }
 
             .controls {
                 flex-direction: column;
+                gap: 0.5rem;
             }
 
             .btn {
                 padding: 1rem 1.5rem;
                 font-size: 1rem;
+                min-width: auto;
+                width: 100%;
             }
 
             .stats {
@@ -207,23 +227,19 @@
             .stat-card {
                 padding: 0.75rem;
             }
-
-            .canvas-wrapper {
-                min-height: 300px;
-            }
         }
 
         @media (max-width: 480px) {
             .header {
-                padding: 1rem;
+                padding: 0.75rem;
             }
 
             .main-content {
-                padding: 0 0.5rem 1rem;
+                padding: 0.5rem;
             }
 
-            .simulation-container {
-                border-radius: 12px;
+            .canvas-wrapper {
+                padding: 0.5rem;
             }
 
             .controls-panel {
@@ -232,10 +248,18 @@
 
             .stats {
                 grid-template-columns: 1fr;
+                gap: 0.5rem;
             }
 
-            .canvas-wrapper {
-                min-height: 250px;
+            .stat-card {
+                padding: 0.5rem;
+            }
+        }
+
+        /* Prevent zoom on mobile */
+        @media (max-width: 768px) {
+            .btn {
+                -webkit-tap-highlight-color: transparent;
             }
         }
 
@@ -595,16 +619,32 @@
         // Make canvas responsive
         function resizeCanvas() {
             const container = canvas.parentElement;
-            const containerWidth = container.clientWidth - 40; // Account for padding
-            const maxWidth = Math.min(containerWidth, 800);
-            const aspectRatio = 3/4; // height / width for better mobile view
+            const containerWidth = container.clientWidth - 32; // Account for padding
             
-            canvas.width = maxWidth;
-            canvas.height = maxWidth * aspectRatio;
+            // Determine canvas size based on screen size
+            let canvasWidth, canvasHeight;
+            
+            if (window.innerWidth <= 480) {
+                // Small mobile
+                canvasWidth = Math.min(containerWidth, 350);
+                canvasHeight = canvasWidth * 0.85; // Slightly taller for mobile
+            } else if (window.innerWidth <= 768) {
+                // Tablet/large mobile
+                canvasWidth = Math.min(containerWidth, 500);
+                canvasHeight = canvasWidth * 0.8;
+            } else {
+                // Desktop
+                canvasWidth = Math.min(containerWidth, 800);
+                canvasHeight = 600;
+            }
+            
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
             
             // Update config based on canvas size
             config.startX = canvas.width / 2;
-            config.pegSpacing = Math.max(12, canvas.width / 45); // Responsive peg spacing
+            config.pegSpacing = Math.max(10, canvas.width / 50); // Responsive peg spacing
+            config.rows = Math.min(20, Math.floor(canvas.width / 25)); // Fewer rows on small screens
             
             // Reinitialize after resize
             initializePegs();
